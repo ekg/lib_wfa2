@@ -6,7 +6,7 @@ Rust bindings for the wavefront algorithm (WFA2-lib,[ https://github.com/smarco/
 
 Basic usage of the library.
 
-`
+```
 use libwfa2::affine_wavefront::AffineWavefronts;
 
 pub fn main() {
@@ -25,11 +25,12 @@ pub fn main() {
 
     println!("Score: {}", aligner.score());
     println!("Cigar: {}", String::from_utf8_lossy(aligner.cigar()));
-}`
+}
+```
 
 Setting heuristics
 
-`
+```
 use libwfa2::affine_wavefront::{AffineWavefronts, HeuristicStrategy};
 
 pub fn main() {
@@ -52,4 +53,5 @@ pub fn main() {
 
     println!("Score: {}", aligner.score());
     println!("Cigar: {}", String::from_utf8_lossy(aligner.cigar()));
-}`
+}
+```

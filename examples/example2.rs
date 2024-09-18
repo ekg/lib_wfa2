@@ -1,6 +1,8 @@
 use libwfa2::affine_wavefront::{AffineWavefronts, HeuristicStrategy};
 
 pub fn main() {
+    println!("Example2\n");
+
     let mut aligner = AffineWavefronts::default();
 
     aligner.set_heuristic(&HeuristicStrategy::BandedStatic { band_min_k: -1, band_max_k: 1 });

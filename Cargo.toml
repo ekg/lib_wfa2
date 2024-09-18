@@ -10,11 +10,11 @@ description = "Bindings to the C implementation of WFA2-lib"
 repository = "https://github.com/4less/libwfa2"
 readme = "readme.md"
 keywords = ["bioinformatics", "alignment", "wfa"]
-categories = ["science", "research"]
+categories = ["science"]
 
 [build-dependencies]
-bindgen = "*"
-clang-sys = "*"
+bindgen = "0.70.1"
+clang-sys = "1.8.1"
 
 
 [profile.release]

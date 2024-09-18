@@ -1,0 +1,25 @@
+cargo-features = ["profile-rustflags"]
+
+[package]
+name = "libwfa2"
+version = "0.1.0"
+edition = "2021"
+authors = ["Joachim Fritscher <joachim.fritscher@gmail.com>"]
+license = "MIT"
+description = "Bindings to the C implementation of WFA2-lib"
+repository = ""
+readme = "readme.md"
+keywords = ["bioinformatics", "sequence alignment", "alignment", "wfa", "wavefront alignment"]
+categories = ["science", "research"]
+
+[build-dependencies]
+bindgen = "*"
+clang-sys = "*"
+
+
+[profile.release]
+opt-level = 3               # Use best optimizations
+overflow-checks = false     # Disable integer overflow checks.
+rustflags = ["-C", "target-feature=+avx,+sse3,+avx2,+fma"]#
+lto = "fat"
+

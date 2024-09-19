@@ -208,18 +208,15 @@ impl AffineWavefronts {
         let form: &mut wfa::alignment_form_t = &mut (unsafe { *self.wf_aligner }).alignment_form;
         match span {
             AlignmentSpan::End2End => {                 
-                form.pattern_begin_free = 0;
-                form.pattern_end_free = 0;
-                form.text_begin_free = 0;
-                form.text_end_free = 0;
-                form.span = wfa::alignment_span_t_alignment_end2end
+                unsafe { wfa::wavefront_aligner_set_alignment_end_to_end(self.wf_aligner) };
             },
             AlignmentSpan::EndsFree { pattern_begin_free, pattern_end_free, text_begin_free, text_end_free } => {
-                form.pattern_begin_free = pattern_begin_free;
-                form.pattern_end_free = pattern_end_free;
-                form.text_begin_free = text_begin_free;
-                form.text_end_free = text_end_free;
-                form.span = wfa::alignment_span_t_alignment_endsfree
+                unsafe { wfa::wavefront_aligner_set_alignment_free_ends(
+                    self.wf_aligner, 
+                    pattern_begin_free, 
+                    pattern_end_free, 
+                    text_begin_free, 
+                    text_end_free) };
             },
             AlignmentSpan::Undefined => (),
         }

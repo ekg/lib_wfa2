@@ -2,7 +2,7 @@ cargo-features = ["profile-rustflags"]
 
 [package]
 name = "libwfa2"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Joachim Fritscher <joachim.fritscher@gmail.com>"]
 license = "MIT"

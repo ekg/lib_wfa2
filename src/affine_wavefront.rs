@@ -4,6 +4,14 @@ use crate::bindings::*;
 use core::slice;
 
 #[derive(Debug, Clone)]
+pub enum DistanceMetric {
+    Indel,
+    Edit,
+    GapAffine,
+    GapAffine2p,
+}
+
+#[derive(Debug, Clone)]
 pub enum HeuristicStrategy {
     None,
     BandedStatic{ band_min_k: std::os::raw::c_int, band_max_k: std::os::raw::c_int },
@@ -151,6 +159,67 @@ impl AffineWavefronts {
         }
         
         s
+    }
+
+    pub fn set_penalties_affine2p(
+        &mut self, 
+        match_: i32,
+        mismatch: i32, 
+        gap_opening1: i32, 
+        gap_extension1: i32,
+        gap_opening2: i32,
+        gap_extension2: i32
+    ) {
+        unsafe {
+            (*self.wf_aligner).penalties.match_ = match_;
+            (*self.wf_aligner).penalties.mismatch = mismatch;
+            (*self.wf_aligner).penalties.gap_opening1 = gap_opening1;
+            (*self.wf_aligner).penalties.gap_extension1 = gap_extension1;
+            (*self.wf_aligner).penalties.gap_opening2 = gap_opening2;
+            (*self.wf_aligner).penalties.gap_extension2 = gap_extension2;
+        }
+    }
+
+    pub fn with_penalties_affine2p(
+        match_: i32,
+        mismatch: i32,
+        gap_opening1: i32,
+        gap_extension1: i32,
+        gap_opening2: i32,
+        gap_extension2: i32
+    ) -> Self {
+        unsafe {
+            // Create attributes and set defaults
+            let mut attributes = wfa::wavefront_aligner_attr_default;
+            
+            // Set distance metric
+            attributes.distance_metric = wfa::distance_metric_t_gap_affine_2p;
+            
+            // Set penalties
+            attributes.affine2p_penalties.match_ = match_;
+            attributes.affine2p_penalties.mismatch = mismatch;
+            attributes.affine2p_penalties.gap_opening1 = gap_opening1;
+            attributes.affine2p_penalties.gap_extension1 = gap_extension1;
+            attributes.affine2p_penalties.gap_opening2 = gap_opening2;
+            attributes.affine2p_penalties.gap_extension2 = gap_extension2;
+
+            // Create aligner with attributes
+            let wf_aligner = wfa::wavefront_aligner_new(&mut attributes);
+            
+            Self { wf_aligner }
+        }
+    }
+
+    pub fn get_distance_metric(&self) -> DistanceMetric {
+        unsafe {
+            match (*self.wf_aligner).penalties.distance_metric {
+                m if m == wfa::distance_metric_t_indel => DistanceMetric::Indel,
+                m if m == wfa::distance_metric_t_edit => DistanceMetric::Edit,
+                m if m == wfa::distance_metric_t_gap_affine => DistanceMetric::GapAffine,
+                m if m == wfa::distance_metric_t_gap_affine_2p => DistanceMetric::GapAffine2p,
+                _ => DistanceMetric::GapAffine, // Default to gap-affine
+            }
+        }
     }
 
     pub fn set_heuristic(&mut self, heuristic: &HeuristicStrategy) {

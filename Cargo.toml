@@ -2,12 +2,12 @@ cargo-features = ["profile-rustflags"]
 
 [package]
 name = "libwfa2"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
-authors = ["Joachim Fritscher <joachim.fritscher@gmail.com>"]
+authors = ["Joachim Fritscher <joachim.fritscher@gmail.com>", "Andrea Guarracino <aguarra1@uthsc.edu>"]
 license = "MIT"
 description = "Bindings to the C implementation of WFA2-lib"
-repository = "https://github.com/4less/libwfa2"
+repository = "https://github.com/AndreaGuarracino/libwfa2"
 readme = "readme.md"
 keywords = ["bioinformatics", "alignment", "wfa"]
 categories = ["science"]
@@ -16,10 +16,8 @@ categories = ["science"]
 bindgen = "0.70.1"
 clang-sys = "1.8.1"
 
-
 [profile.release]
 opt-level = 3               # Use best optimizations
 overflow-checks = false     # Disable integer overflow checks.
 rustflags = ["-C", "target-feature=+avx,+sse3,+avx2,+fma"]#
 lto = "fat"
-

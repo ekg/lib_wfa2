@@ -55,7 +55,8 @@ fn build_wfa() -> Option<()> {
     // hotfix Makefile
     let _makefile_fix = Command::new("sed")
         .arg("-i")
-        .arg("s/CC_FLAGS=-Wall -g/CC_FLAGS=-Wall -g -fPIC/g")
+        .arg("s/CC_FLAGS=-Wall -g -fPIE/CC_FLAGS=-Wall -g -fPIC/g")
+        .arg(format!("{}/Makefile", build_paths.wfa_out().display()))
         .output()
         .expect("Failed hotfixing makefile");
 

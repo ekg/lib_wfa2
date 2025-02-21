@@ -1,6 +1,6 @@
 # libwfa2
 
-Rust bindings for the wavefront algorithm ([WFA2-lib](https://github.com/smarco/WFA2-lib)). This library supports both affine gap and dual-cost gap-affine penalties.
+Rust binding for [WFA2-lib](https://github.com/smarco/WFA2-lib), with support for both affine gap and dual-cost gap-affine penalties.
 
 ## Examples
 
@@ -49,7 +49,7 @@ pub fn main() {
 }
 ```
 
-Setting heuristics
+Setting heuristics:
 
 ```rust
 use libwfa2::affine_wavefront::{AffineWavefronts, HeuristicStrategy};

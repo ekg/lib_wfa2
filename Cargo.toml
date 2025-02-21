@@ -1,5 +1,3 @@
-cargo-features = ["profile-rustflags"]
-
 [package]
 name = "libwfa2"
 version = "0.1.2"
@@ -15,9 +13,3 @@ categories = ["science"]
 [build-dependencies]
 bindgen = "0.70.1"
 clang-sys = "1.8.1"
-
-[profile.release]
-opt-level = 3               # Use best optimizations
-overflow-checks = false     # Disable integer overflow checks.
-rustflags = ["-C", "target-feature=+avx,+sse3,+avx2,+fma"]#
-lto = "fat"

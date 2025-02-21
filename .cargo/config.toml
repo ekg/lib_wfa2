@@ -1,0 +1,19 @@
+# Target-specific configuration for x86_64
+[target.'cfg(target_arch = "x86_64")']
+# CPU-specific optimizations
+rustflags = ["-C", "target-feature=+avx,+sse3,+avx2,+fma"]#
+
+# Optional: You can also specify different configurations for different build profiles
+[profile.release]
+# Release profile settings
+opt-level = 3               # Use best optimizations
+overflow-checks = false     # Disable integer overflow checks.
+debug = false
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+
+[profile.dev]
+# Development profile settings
+opt-level = 0
+debug = true

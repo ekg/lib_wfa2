@@ -1,46 +1,48 @@
+// Import the bindgen crate for generating Rust FFI bindings
 extern crate bindgen;
 
 use std::env;
 use std::path::PathBuf;
 
-fn wfa() {
-    // 1. Link instructions for Cargo.
-
-    // The directory of the WFA libraries, added to the search path.
-    println!("cargo:rustc-link-search=./WFA2-lib/lib");
-    // Link the `wfa-lib` library.
-    println!("cargo:rustc-link-lib=wfa");
-    // Also link `omp`.
-    println!("cargo:rustc-link-lib=gomp");
-    // Invalidate the built crate whenever the linked library changes.
-    println!("cargo:rerun-if-changed=./WFA2-lib/lib/libwfa.a");
-
-    // 2. Generate bindings.
-
-    let bindings = bindgen::Builder::default()
-        // Generate bindings for this header file.
-        .header("./WFA2-lib/wavefront/wavefront_align.h")
-        // Add this directory to the include path to find included header files.
-        .clang_arg("-I./WFA2-lib")
-        // Generate bindings for all functions starting with `wavefront_`.
-        .allowlist_function("wavefront_.*")
-        // Generate bindings for all variables starting with `wavefront_`.
-        .allowlist_var("wavefront_.*")
-        // Invalidate the built crate whenever any of the included header files
-        // changed.
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
-        // Finish the builder and generate the bindings.
-        .generate()
-        // Unwrap the Result and panic on failure.
-        .expect("Unable to generate bindings");
-
-    // Write the bindings to the $OUT_DIR/bindings_wfa.rs file.
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    bindings
-        .write_to_file(out_path.join("bindings_wfa.rs"))
-        .expect("Couldn't write bindings!");
-}
-
 fn main() {
-    wfa();
+    // Tell Cargo to rerun this build script if LIBWFA_PATH environment variable changes
+    println!("cargo:rerun-if-env-changed=LIBWFA_PATH");
+
+    // Get WFA2-lib base directory from environment variable or use default
+    let base_dir = env::var("LIBWFA_PATH")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from("./WFA2-lib"));
+    
+    // Construct paths for library and header files
+    let lib_path = base_dir.join("lib");
+    let header_path = base_dir.join("wavefront/wavefront_align.h");
+
+    // Tell Cargo where to find and how to link the required libraries
+    // Specify the search directory for libraries
+    println!("cargo:rustc-link-search={}", lib_path.display());
+    // Link against the WFA library
+    println!("cargo:rustc-link-lib=wfa");
+    // Link against OpenMP for parallel execution support
+    println!("cargo:rustc-link-lib=gomp");
+    // Rerun build script if the WFA library file changes
+    println!("cargo:rerun-if-changed={}", lib_path.join("libwfa.a").display());
+    
+    // Generate Rust FFI bindings from C header files
+    bindgen::Builder::default()
+        // Specify the main header file to generate bindings for
+        .header(header_path.to_str().unwrap())
+        // Add WFA2-lib root to include path for finding dependencies
+        .clang_arg(format!("-I{}", base_dir.display()))
+        // Only generate bindings for functions starting with "wavefront_"
+        .allowlist_function("wavefront_.*")
+        // Only generate bindings for variables starting with "wavefront_"
+        .allowlist_var("wavefront_.*")
+        // Use default Cargo callbacks for error handling and rebuilding
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+        // Generate the bindings
+        .generate()
+        .expect("Unable to generate bindings")
+        // Write bindings to the out directory specified by Cargo
+        .write_to_file(PathBuf::from(env::var("OUT_DIR").unwrap()).join("bindings_wfa.rs"))
+        .expect("Couldn't write bindings!");
 }

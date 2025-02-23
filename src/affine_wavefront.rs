@@ -148,7 +148,7 @@ impl AffineWavefronts {
     }
 
     pub fn with_penalties(match_: i32, mismatch: i32, gap_opening: i32, gap_extension: i32) -> Self {
-        let mut s = Self {
+        let s = Self {
             wf_aligner: unsafe { wfa::wavefront_aligner_new(core::ptr::null_mut()) },
         };
         unsafe {
@@ -274,7 +274,7 @@ impl AffineWavefronts {
     }
 
     pub fn set_alignment_span(&mut self, span: AlignmentSpan) {
-        let form: &mut wfa::alignment_form_t = &mut (unsafe { *self.wf_aligner }).alignment_form;
+        let _form: &mut wfa::alignment_form_t = &mut (unsafe { *self.wf_aligner }).alignment_form;
         match span {
             AlignmentSpan::End2End => {                 
                 unsafe { wfa::wavefront_aligner_set_alignment_end_to_end(self.wf_aligner) };

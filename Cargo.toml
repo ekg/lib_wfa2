@@ -11,5 +11,3 @@ keywords = ["bioinformatics", "alignment", "wfa"]
 categories = ["science"]
 
 [build-dependencies]
-bindgen = "0.70.1"
-clang-sys = "1.8.1"

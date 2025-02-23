@@ -5,11 +5,11 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
-    // Tell Cargo to rerun this build script if LIBWFA_PATH environment variable changes
-    println!("cargo:rerun-if-env-changed=LIBWFA_PATH");
+    // Tell Cargo to rerun this build script if WFA2LIB_PATH environment variable changes
+    println!("cargo:rerun-if-env-changed=WFA2LIB_PATH");
 
     // Get WFA2-lib base directory from environment variable or use default
-    let base_dir = env::var("LIBWFA_PATH")
+    let base_dir = env::var("WFA2LIB_PATH")
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from("./WFA2-lib"));
     

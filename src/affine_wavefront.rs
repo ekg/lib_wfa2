@@ -189,7 +189,7 @@ impl AffineWavefronts {
         gap_extension2: i32
     ) -> Self {
         unsafe {
-            // Create attributes and set defaults
+            // Create attributes and set defaults (see https://github.com/smarco/WFA2-lib/blob/2ec2891/wavefront/wavefront_attributes.c#L38)
             let mut attributes = wfa::wavefront_aligner_attr_default;
             
             // Set distance metric
@@ -203,6 +203,12 @@ impl AffineWavefronts {
             attributes.affine2p_penalties.gap_opening2 = gap_opening2;
             attributes.affine2p_penalties.gap_extension2 = gap_extension2;
 
+            // Set memory mode
+            attributes.memory_mode = wfa::wavefront_memory_t_wavefront_memory_high;
+            
+            // Disable heuristic
+            attributes.heuristic.strategy = wfa::wf_heuristic_strategy_wf_heuristic_none;
+            
             // Create aligner with attributes
             let wf_aligner = wfa::wavefront_aligner_new(&mut attributes);
             

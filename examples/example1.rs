@@ -1,4 +1,4 @@
-use libwfa2::affine_wavefront::AffineWavefronts;
+use lib_wfa2::affine_wavefront::AffineWavefronts;
 
 pub fn main() {
     println!("Example1\n");

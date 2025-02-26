@@ -1,4 +1,4 @@
-use libwfa2::affine_wavefront::{AffineWavefronts, HeuristicStrategy};
+use lib_wfa2::affine_wavefront::{AffineWavefronts, HeuristicStrategy};
 
 pub fn main() {
     println!("Example2\n");

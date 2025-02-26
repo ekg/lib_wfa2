@@ -1,10 +1,10 @@
-# libwfa2
+# lib_wfa2
 
 Rust binding for [WFA2-lib](https://github.com/smarco/WFA2-lib), with support for both affine gap and dual-cost gap-affine penalties.
 
 ## Building
 
-To use `libwfa2` in `your project`, you need to build `WFA2-lib` first:
+To use `lib_wfa2` in `your project`, you need to build `WFA2-lib` first:
 
 ```shell
 git clone https://github.com/smarco/WFA2-lib
@@ -29,7 +29,7 @@ cargo build --release
 With affine gap penalties:
 
 ```rust
-use libwfa2::affine_wavefront::AffineWavefronts;
+use lib_wfa2::affine_wavefront::AffineWavefronts;
 
 pub fn main() {
     let aligner = AffineWavefronts::default();
@@ -51,7 +51,7 @@ pub fn main() {
 With dual-cost gap-affine penalties:
 
 ```rust
-use libwfa2::affine_wavefront::AffineWavefronts;
+use lib_wfa2::affine_wavefront::AffineWavefronts;
 
 pub fn main() {
     // Create an aligner with affine2p penalties.
@@ -74,7 +74,7 @@ pub fn main() {
 Setting heuristics:
 
 ```rust
-use libwfa2::affine_wavefront::{AffineWavefronts, HeuristicStrategy};
+use lib_wfa2::affine_wavefront::{AffineWavefronts, HeuristicStrategy};
 
 pub fn main() {
     let mut aligner = AffineWavefronts::default();

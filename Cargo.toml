@@ -1,11 +1,13 @@
 [package]
-name = "libwfa2"
-version = "0.1.3"
+name = "lib_wfa2"
+version = "0.1.0"
 edition = "2021"
 authors = ["Andrea Guarracino <aguarra1@uthsc.edu>"]
 license = "MIT"
 description = "Bindings to the C implementation of WFA2-lib"
-repository = "https://github.com/AndreaGuarracino/libwfa2"
+repository = "https://github.com/AndreaGuarracino/lib_wfa2"
 readme = "README.md"
 keywords = ["bioinformatics", "alignment", "wfa"]
 categories = ["science"]
+
+[dependencies]

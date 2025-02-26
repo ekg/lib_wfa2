@@ -2,6 +2,28 @@
 
 Rust binding for [WFA2-lib](https://github.com/smarco/WFA2-lib), with support for both affine gap and dual-cost gap-affine penalties.
 
+## Building
+
+To use `libwfa2` in `your project`, you need to build `WFA2-lib` first:
+
+```shell
+git clone https://github.com/smarco/WFA2-lib
+cd WFA2-lib
+make clean all
+```
+
+and then:
+
+```bash
+# Point to your pre-built WFA2-lib directory
+export WFA2LIB_PATH="/path/to/WFA2-lib"
+
+# Build your project
+git clone <your-project>
+cd <your-project>
+cargo build --release
+```
+
 ## Examples
 
 With affine gap penalties:

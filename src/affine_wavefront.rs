@@ -148,7 +148,7 @@ impl AffineWavefronts {
     }
 
     pub fn with_penalties(match_: i32, mismatch: i32, gap_opening: i32, gap_extension: i32) -> Self {
-        let mut s = Self {
+        let s = Self {
             wf_aligner: unsafe { wfa::wavefront_aligner_new(core::ptr::null_mut()) },
         };
         unsafe {
@@ -189,7 +189,7 @@ impl AffineWavefronts {
         gap_extension2: i32
     ) -> Self {
         unsafe {
-            // Create attributes and set defaults
+            // Create attributes and set defaults (see https://github.com/smarco/WFA2-lib/blob/2ec2891/wavefront/wavefront_attributes.c#L38)
             let mut attributes = wfa::wavefront_aligner_attr_default;
             
             // Set distance metric
@@ -203,6 +203,12 @@ impl AffineWavefronts {
             attributes.affine2p_penalties.gap_opening2 = gap_opening2;
             attributes.affine2p_penalties.gap_extension2 = gap_extension2;
 
+            // Set memory mode
+            attributes.memory_mode = wfa::wavefront_memory_t_wavefront_memory_high;
+            
+            // Disable heuristic
+            attributes.heuristic.strategy = wfa::wf_heuristic_strategy_wf_heuristic_none;
+            
             // Create aligner with attributes
             let wf_aligner = wfa::wavefront_aligner_new(&mut attributes);
             
@@ -274,7 +280,7 @@ impl AffineWavefronts {
     }
 
     pub fn set_alignment_span(&mut self, span: AlignmentSpan) {
-        let form: &mut wfa::alignment_form_t = &mut (unsafe { *self.wf_aligner }).alignment_form;
+        let _form: &mut wfa::alignment_form_t = &mut (unsafe { *self.wf_aligner }).alignment_form;
         match span {
             AlignmentSpan::End2End => {                 
                 unsafe { wfa::wavefront_aligner_set_alignment_end_to_end(self.wf_aligner) };

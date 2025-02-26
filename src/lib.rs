@@ -1,5 +1,3 @@
-use core::slice;
-
 /// Include the generated bindings into a separate module.
 #[allow(non_upper_case_globals)]
 #[allow(non_snake_case)]

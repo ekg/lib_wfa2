@@ -3,5 +3,5 @@
 #![allow(non_snake_case)]
 
 pub mod wfa {
-    include!(concat!(env!("OUT_DIR"), "/bindings_wfa.rs"));
+    include!("bindings_wfa.rs");
 }

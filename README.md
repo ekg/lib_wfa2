@@ -4,11 +4,12 @@ Rust binding for [WFA2-lib](https://github.com/smarco/WFA2-lib), with support fo
 
 ## Building
 
-To use `lib_wfa2` in `your project`, you need to build `WFA2-lib` first:
+To use `lib_wfa2` in `your project`, you need to build `WFA2-lib` (commit `df3dce4b99c37ac4f34fdcef74b774c80b7fadc4`) first:
 
 ```shell
 git clone https://github.com/smarco/WFA2-lib
 cd WFA2-lib
+git checkout df3dce4b99c37ac4f34fdcef74b774c80b7fadc4
 make clean all
 ```
 

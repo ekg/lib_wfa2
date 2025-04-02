@@ -9,7 +9,7 @@ fn main() {
     let base_dir = env::var("WFA2LIB_PATH")
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from("./WFA2-lib"));
-    
+
     // Construct paths for library and header files
     let lib_path = base_dir.join("lib");
 
@@ -21,5 +21,8 @@ fn main() {
     // Link against OpenMP for parallel execution support
     println!("cargo:rustc-link-lib=gomp");
     // Rerun build script if the WFA library file changes
-    println!("cargo:rerun-if-changed={}", lib_path.join("libwfa.a").display());
+    println!(
+        "cargo:rerun-if-changed={}",
+        lib_path.join("libwfa.a").display()
+    );
 }

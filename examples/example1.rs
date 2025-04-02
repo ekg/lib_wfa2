@@ -9,12 +9,12 @@ pub fn main() {
 
     // Text means reference
     let text = b"TCTATACTGCGCGTTTGGAGAAATAAAATAGT";
-    
+
     aligner.align(pattern, text);
 
     println!("Pattern: {}", String::from_utf8_lossy(pattern));
     println!("Text:    {}\n", String::from_utf8_lossy(text));
-    
+
     println!("Score: {}", aligner.score());
     println!("Cigar: {}", String::from_utf8_lossy(aligner.cigar()));
 }

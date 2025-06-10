@@ -138,7 +138,7 @@ pub struct AffineWavefronts {
 impl Clone for AffineWavefronts {
     fn clone(&self) -> Self {
         Self {
-            wf_aligner: self.wf_aligner.clone(),
+            wf_aligner: self.wf_aligner,
         }
     }
 }
@@ -428,7 +428,7 @@ impl AffineWavefronts {
 
     pub fn get_memory_mode(&self) -> MemoryMode {
         let a = unsafe { *self.aligner() };
-        MemoryMode::from_value(a.memory_mode as u32)
+        MemoryMode::from_value(a.memory_mode)
     }
 
     pub fn get_alignment_span(&self) -> AlignmentSpan {

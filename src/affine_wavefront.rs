@@ -121,11 +121,11 @@ pub enum AlignmentStatus {
 impl From<std::os::raw::c_int> for AlignmentStatus {
     fn from(value: std::os::raw::c_int) -> Self {
         match value {
-            v if v == 0 => AlignmentStatus::Completed,
-            v if v == 1 => AlignmentStatus::Partial,
-            v if v == -100 => AlignmentStatus::MaxStepsReached,
-            v if v == -200 => AlignmentStatus::OOM,
-            v if v == -300 => AlignmentStatus::Unattainable,
+            0 => AlignmentStatus::Completed,
+            1 => AlignmentStatus::Partial,
+            -100 => AlignmentStatus::MaxStepsReached,
+            -200 => AlignmentStatus::OOM,
+            -300 => AlignmentStatus::Unattainable,
             _ => AlignmentStatus::Undefined,
         }
     }

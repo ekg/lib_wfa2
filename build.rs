@@ -1,93 +1,64 @@
 // extern crate bindgen;
 
-use std::{
-    env,
-    fs::{read_dir, remove_dir_all},
-    path::PathBuf,
-    process::Command,
-};
+use std::{path::PathBuf, process::Command};
 
-/// To avoid any mistypes in paths, I chose to use this struct to set all paths once and use them for here on.
-struct BuildPaths(PathBuf);
+struct BuildPaths {
+    wfa_src: PathBuf,
+}
 
 impl BuildPaths {
-    const WFA2FOLDER: &str = "WFA2-lib";
-    fn out_dir(&self) -> &PathBuf { &self.0 }
-    // The path of the WFA2-lib right in the base folder of this project (source)
-    fn wfa_src(&self) -> PathBuf { Self::WFA2FOLDER.into() }
-    // Copy in OUT_DIR, this is where WFA is built!
-    fn wfa_out(&self) -> PathBuf { self.out_dir().join(Self::WFA2FOLDER) }
-    // Library path for WFA lib in build directory (wfa_out)
-    // This is needed for the linker, otherwise wfalib will not be found.
-    fn wfa_out_lib(&self) -> PathBuf { self.wfa_out().join("lib") }
-}
-
-impl Default for BuildPaths {
-    fn default() -> Self {
-        let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-        Self(out_dir)
-    }
-}
-
-fn build_wfa() -> Option<()> {
-    let build_paths = BuildPaths::default();
-
-    let mut wfa_dir = read_dir(build_paths.wfa_src()).ok()?;
-    if !wfa_dir.any(|f| f.unwrap().file_name() == "Makefile") {
-        return None;
-    }
-    
-    let _ = remove_dir_all(build_paths.wfa_out());
-
-    // Copy the WFA dir to OUT_PATH and build it there to avoid pulling the entire repo.
-    let _cp_wfa = Command::new("cp")
-        .arg("-r")
-        .arg(build_paths.wfa_src())
-        .arg(build_paths.out_dir())
-        .output()
-        .expect("Copy failed");
-
-    // Edit the Makefile
-    // let _makefile_fix = Command::new("sed")
-    //     .arg("-i")
-    //     .arg("s/CC_FLAGS=-Wall -g/CC_FLAGS=-Wall -g -fPIC/g")
-    //     .output()
-    //     .expect("Failed hotfixing makefile");
-
-    // Build the WFA library
-    let output = Command::new("make")
-        .arg("clean")
-        .arg("all")
-        .current_dir(build_paths.wfa_out())
-        .output();
-
-    match output {
-        Ok(output) => { 
-            if output.status.success() {
-            Some(())
-        } else {
-            panic!("1) make error: {}", String::from_utf8_lossy(&output.stderr));
+    fn new() -> Self {
+        Self {
+            wfa_src: PathBuf::from("WFA2-lib"),
         }
-    },
-        Err(err) => { 
-            panic!("2) make error: {}", err);
-        },
+    }
+
+    fn wfa_lib_dir(&self) -> PathBuf {
+        self.wfa_src.join("lib")
     }
 }
 
+fn build_wfa() -> Result<(), Box<dyn std::error::Error>> {
+    let paths = BuildPaths::new();
 
-fn wfa() {
-    let build_paths = BuildPaths::default();
+    // Check if WFA2-lib exists and has Makefile
+    if !paths.wfa_src.join("Makefile").exists() {
+        return Err("WFA2-lib/Makefile not found. Make sure the submodule is initialized.".into());
+    }
 
-    // Link instructions for Cargo
-    // Despite the folder being named WFA2-lib, the library has to be linked with wfa
-    println!("cargo:rustc-link-lib=wfa");
-    // Also link `omp`.
-    println!("cargo:rustc-link-lib=gomp"); // omp does not work for some reason, gomp does.
-    // Invalidate the built crate whenever the linked library changes.
-    println!("cargo:rerun-if-changed={}/libwfa.a", build_paths.wfa_out_lib().display());
-    // Rustc lib search for library in "OUT_DIR"
-    println!("cargo:rustc-link-search={}", build_paths.wfa_out_lib().display());
+    // Build WFA2-lib in place
+    let output = Command::new("make")
+        .args(["clean", "all"])
+        .current_dir(&paths.wfa_src)
+        .output()?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Make failed: {}", stderr).into());
+    }
+
+    Ok(())
+}
+
+fn setup_linking() {
+    let paths = BuildPaths::new();
+
+    // Link the WFA library
+    println!("cargo:rustc-link-lib=static=wfa");
+    println!("cargo:rustc-link-lib=gomp");
+
+    // Set library search path
+    println!(
+        "cargo:rustc-link-search=native={}",
+        paths.wfa_lib_dir().display()
+    );
+
+    // Rerun if WFA library changes
+    println!("cargo:rerun-if-changed=WFA2-lib");
+    println!(
+        "cargo:rerun-if-changed={}/libwfa.a",
+        paths.wfa_lib_dir().display()
+    );
 
     // Generate bindings
     // let bindings = bindgen::Builder::default()
@@ -115,6 +86,8 @@ fn wfa() {
 }
 
 fn main() {
-    build_wfa();
-    wfa();
+    if let Err(e) = build_wfa() {
+        panic!("Failed to build WFA2-lib: {}", e);
+    }
+    setup_linking();
 }

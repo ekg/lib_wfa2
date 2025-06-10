@@ -11,3 +11,6 @@ keywords = ["bioinformatics", "alignment", "wfa"]
 categories = ["science"]
 
 [dependencies]
+
+[build-dependencies]
+bindgen = "0.72.0"

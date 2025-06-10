@@ -121,11 +121,11 @@ pub enum AlignmentStatus {
 impl From<std::os::raw::c_int> for AlignmentStatus {
     fn from(value: std::os::raw::c_int) -> Self {
         match value {
-            v if v == 0 => AlignmentStatus::Completed,
-            v if v == 1 => AlignmentStatus::Partial,
-            v if v == -100 => AlignmentStatus::MaxStepsReached,
-            v if v == -200 => AlignmentStatus::OOM,
-            v if v == -300 => AlignmentStatus::Unattainable,
+            0 => AlignmentStatus::Completed,
+            1 => AlignmentStatus::Partial,
+            -100 => AlignmentStatus::MaxStepsReached,
+            -200 => AlignmentStatus::OOM,
+            -300 => AlignmentStatus::Unattainable,
             _ => AlignmentStatus::Undefined,
         }
     }
@@ -138,7 +138,7 @@ pub struct AffineWavefronts {
 impl Clone for AffineWavefronts {
     fn clone(&self) -> Self {
         Self {
-            wf_aligner: self.wf_aligner.clone(),
+            wf_aligner: self.wf_aligner,
         }
     }
 }
@@ -428,7 +428,7 @@ impl AffineWavefronts {
 
     pub fn get_memory_mode(&self) -> MemoryMode {
         let a = unsafe { *self.aligner() };
-        MemoryMode::from_value(a.memory_mode as u32)
+        MemoryMode::from_value(a.memory_mode)
     }
 
     pub fn get_alignment_span(&self) -> AlignmentSpan {

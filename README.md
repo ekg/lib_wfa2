@@ -2,28 +2,28 @@
 
 Rust binding for [WFA2-lib](https://github.com/smarco/WFA2-lib), with support for both affine gap and dual-cost gap-affine penalties.
 
+## Usage
+
+To use `lib_wfa2`, add the following to your `Cargo.toml`:
+
+```toml
+[dependencies]
+lib_wfa2 = { git = "https://github.com/AndreaGuarracino/lib_wfa2" }
+```
+
+Note that this library requires C build tools (`gcc`, `make`) to compile the underlying `WFA2-lib`.
+
 ## Building
 
-To use `lib_wfa2` in `your project`, you need to build `WFA2-lib` (commit `3c1734e9bb319c7782ae6845e627612ff157d1cc`) first:
-
-```shell
-git clone https://github.com/smarco/WFA2-lib
-cd WFA2-lib
-git checkout 3c1734e9bb319c7782ae6845e627612ff157d1cc
-make clean all
-```
-
-and then:
+To build `lib_wfa2`, simply clone the repository with submodules and build it:
 
 ```bash
-# Point to your pre-built WFA2-lib directory
-export WFA2LIB_PATH="/path/to/WFA2-lib"
-
-# Build your project
-git clone <your-project>
-cd <your-project>
+git clone --recursive https://github.com/AndreaGuarracino/lib_wfa2
+cd lib_wfa2
 cargo build --release
 ```
+
+The build process automatically compiles the included `WFA2-lib`.
 
 ## Examples
 

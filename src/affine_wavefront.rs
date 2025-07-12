@@ -3,7 +3,7 @@ use wfa::wavefront_aligner_set_max_alignment_steps;
 use crate::bindings::*;
 use core::slice;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum DistanceMetric {
     Indel,
     Edit,
@@ -11,7 +11,7 @@ pub enum DistanceMetric {
     GapAffine2p,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum HeuristicStrategy {
     None,
     BandedStatic {
@@ -43,7 +43,7 @@ pub enum HeuristicStrategy {
     },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum AlignmentScope {
     ComputeScore,
     Alignment,
@@ -60,7 +60,7 @@ impl AlignmentScope {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum AlignmentSpan {
     End2End,
     EndsFree {
@@ -87,7 +87,7 @@ impl AlignmentSpan {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum MemoryMode {
     High,
     Medium,
@@ -108,7 +108,7 @@ impl MemoryMode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum AlignmentStatus {
     Completed,
     Partial,
@@ -190,17 +190,53 @@ impl AffineWavefronts {
         gap_opening: i32,
         gap_extension: i32,
     ) -> Self {
-        let s = Self {
-            wf_aligner: unsafe { wfa::wavefront_aligner_new(core::ptr::null_mut()) },
-        };
-        unsafe {
-            (*s.wf_aligner).penalties.match_ = match_;
-            (*s.wf_aligner).penalties.mismatch = mismatch;
-            (*s.wf_aligner).penalties.gap_opening1 = gap_opening;
-            (*s.wf_aligner).penalties.gap_extension1 = gap_extension;
-        }
+        // Default to high memory mode for backward compatibility
+        Self::with_penalties_and_memory_mode(
+            match_,
+            mismatch,
+            gap_opening,
+            gap_extension,
+            MemoryMode::High,
+        )
+    }
 
-        s
+    pub fn with_penalties_and_memory_mode(
+        match_: i32,
+        mismatch: i32,
+        gap_opening: i32,
+        gap_extension: i32,
+        memory_mode: MemoryMode,
+    ) -> Self {
+        unsafe {
+            // Create attributes and set defaults
+            let mut attributes = wfa::wavefront_aligner_attr_default;
+
+            // Set distance metric
+            attributes.distance_metric = wfa::distance_metric_t_gap_affine;
+
+            // Set penalties
+            attributes.affine_penalties.match_ = match_;
+            attributes.affine_penalties.mismatch = mismatch;
+            attributes.affine_penalties.gap_opening = gap_opening;
+            attributes.affine_penalties.gap_extension = gap_extension;
+
+            // Set memory mode based on parameter
+            attributes.memory_mode = match memory_mode {
+                MemoryMode::High => wfa::wavefront_memory_t_wavefront_memory_high,
+                MemoryMode::Medium => wfa::wavefront_memory_t_wavefront_memory_med,
+                MemoryMode::Low => wfa::wavefront_memory_t_wavefront_memory_low,
+                MemoryMode::Ultralow => wfa::wavefront_memory_t_wavefront_memory_ultralow,
+                MemoryMode::Undefined => panic!("Cannot create aligner with undefined memory mode"),
+            };
+
+            // Disable heuristic
+            attributes.heuristic.strategy = wfa::wf_heuristic_strategy_wf_heuristic_none;
+
+            // Create aligner with attributes
+            let wf_aligner = wfa::wavefront_aligner_new(&mut attributes);
+
+            Self { wf_aligner }
+        }
     }
 
     pub fn set_penalties_affine2p(
@@ -230,6 +266,27 @@ impl AffineWavefronts {
         gap_opening2: i32,
         gap_extension2: i32,
     ) -> Self {
+        // Default to high memory mode for backward compatibility
+        Self::with_penalties_affine2p_and_memory_mode(
+            match_,
+            mismatch,
+            gap_opening1,
+            gap_extension1,
+            gap_opening2,
+            gap_extension2,
+            MemoryMode::High,
+        )
+    }
+
+    pub fn with_penalties_affine2p_and_memory_mode(
+        match_: i32,
+        mismatch: i32,
+        gap_opening1: i32,
+        gap_extension1: i32,
+        gap_opening2: i32,
+        gap_extension2: i32,
+        memory_mode: MemoryMode,
+    ) -> Self {
         unsafe {
             // Create attributes and set defaults (see https://github.com/smarco/WFA2-lib/blob/2ec2891/wavefront/wavefront_attributes.c#L38)
             let mut attributes = wfa::wavefront_aligner_attr_default;
@@ -245,8 +302,14 @@ impl AffineWavefronts {
             attributes.affine2p_penalties.gap_opening2 = gap_opening2;
             attributes.affine2p_penalties.gap_extension2 = gap_extension2;
 
-            // Set memory mode
-            attributes.memory_mode = wfa::wavefront_memory_t_wavefront_memory_high;
+            // Set memory mode based on parameter
+            attributes.memory_mode = match memory_mode {
+                MemoryMode::High => wfa::wavefront_memory_t_wavefront_memory_high,
+                MemoryMode::Medium => wfa::wavefront_memory_t_wavefront_memory_med,
+                MemoryMode::Low => wfa::wavefront_memory_t_wavefront_memory_low,
+                MemoryMode::Ultralow => wfa::wavefront_memory_t_wavefront_memory_ultralow,
+                MemoryMode::Undefined => panic!("Cannot create aligner with undefined memory mode"),
+            };
 
             // Disable heuristic
             attributes.heuristic.strategy = wfa::wf_heuristic_strategy_wf_heuristic_none;
@@ -416,15 +479,12 @@ impl AffineWavefronts {
         }
     }
 
-    pub fn set_memory_mode(&mut self, mode: MemoryMode) {
-        (unsafe { *self.wf_aligner }).memory_mode = match mode {
-            MemoryMode::High => wfa::wavefront_memory_t_wavefront_memory_high,
-            MemoryMode::Medium => wfa::wavefront_memory_t_wavefront_memory_med,
-            MemoryMode::Low => wfa::wavefront_memory_t_wavefront_memory_low,
-            MemoryMode::Ultralow => wfa::wavefront_memory_t_wavefront_memory_ultralow,
-            MemoryMode::Undefined => panic!("Cannot set Undefined memory mode!"),
-        }
-    }
+    // REMOVED: set_memory_mode() - This method was removed because it only changes the 
+    // memory_mode field but does NOT reconfigure the underlying WFA2 aligner. 
+    // Memory mode must be set at creation time using the appropriate constructors:
+    // - with_penalties_and_memory_mode()
+    // - with_penalties_affine2p_and_memory_mode()
+    // - AffineWavefrontsBuilder::new().memory_mode(...).build()
 
     pub fn get_memory_mode(&self) -> MemoryMode {
         let a = unsafe { *self.aligner() };
@@ -490,5 +550,121 @@ impl AffineWavefronts {
 
             alignment_status
         }
+    }
+
+    // Convenient constructor for bi-WFA with ultralow memory
+    pub fn new_ultralow() -> Self {
+        Self::with_penalties_affine2p_and_memory_mode(
+            0,  // match
+            4,  // mismatch
+            6,  // gap_opening1
+            2,  // gap_extension1
+            12, // gap_opening2
+            1,  // gap_extension2
+            MemoryMode::Ultralow,
+        )
+    }
+}
+
+// Builder pattern for more complex configurations
+pub struct AffineWavefrontsBuilder {
+    distance_metric: DistanceMetric,
+    match_score: i32,
+    mismatch_penalty: i32,
+    gap_opening1: i32,
+    gap_extension1: i32,
+    gap_opening2: Option<i32>,
+    gap_extension2: Option<i32>,
+    memory_mode: MemoryMode,
+    heuristic: HeuristicStrategy,
+    alignment_scope: AlignmentScope,
+}
+
+impl Default for AffineWavefrontsBuilder {
+    fn default() -> Self {
+        Self {
+            distance_metric: DistanceMetric::GapAffine,
+            match_score: 0,
+            mismatch_penalty: 4,
+            gap_opening1: 6,
+            gap_extension1: 2,
+            gap_opening2: None,
+            gap_extension2: None,
+            memory_mode: MemoryMode::High,
+            heuristic: HeuristicStrategy::None,
+            alignment_scope: AlignmentScope::Alignment,
+        }
+    }
+}
+
+impl AffineWavefrontsBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn distance_metric(mut self, metric: DistanceMetric) -> Self {
+        self.distance_metric = metric;
+        self
+    }
+
+    pub fn penalties(mut self, match_: i32, mismatch: i32, gap_open: i32, gap_ext: i32) -> Self {
+        self.match_score = match_;
+        self.mismatch_penalty = mismatch;
+        self.gap_opening1 = gap_open;
+        self.gap_extension1 = gap_ext;
+        self
+    }
+
+    pub fn dual_affine_penalties(mut self, gap_open2: i32, gap_ext2: i32) -> Self {
+        self.distance_metric = DistanceMetric::GapAffine2p;
+        self.gap_opening2 = Some(gap_open2);
+        self.gap_extension2 = Some(gap_ext2);
+        self
+    }
+
+    pub fn memory_mode(mut self, mode: MemoryMode) -> Self {
+        self.memory_mode = mode;
+        self
+    }
+
+    pub fn heuristic(mut self, strategy: HeuristicStrategy) -> Self {
+        self.heuristic = strategy;
+        self
+    }
+
+    pub fn alignment_scope(mut self, scope: AlignmentScope) -> Self {
+        self.alignment_scope = scope;
+        self
+    }
+
+    pub fn build(self) -> AffineWavefronts {
+        let mut aligner = match self.distance_metric {
+            DistanceMetric::GapAffine => {
+                AffineWavefronts::with_penalties_and_memory_mode(
+                    self.match_score,
+                    self.mismatch_penalty,
+                    self.gap_opening1,
+                    self.gap_extension1,
+                    self.memory_mode,
+                )
+            }
+            DistanceMetric::GapAffine2p => {
+                AffineWavefronts::with_penalties_affine2p_and_memory_mode(
+                    self.match_score,
+                    self.mismatch_penalty,
+                    self.gap_opening1,
+                    self.gap_extension1,
+                    self.gap_opening2.unwrap_or(12),
+                    self.gap_extension2.unwrap_or(1),
+                    self.memory_mode,
+                )
+            }
+            _ => panic!("Distance metric {:?} not yet supported in builder", self.distance_metric),
+        };
+
+        aligner.set_heuristic(&self.heuristic);
+        aligner.set_alignment_scope(self.alignment_scope);
+
+        aligner
     }
 }

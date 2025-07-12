@@ -2,6 +2,8 @@
 
 Rust binding for [WFA2-lib](https://github.com/smarco/WFA2-lib), with support for both affine gap and dual-cost gap-affine penalties.
 
+📚 **[Full documentation available in the docs/ directory](docs/)**
+
 ## Usage
 
 To use `lib_wfa2`, add the following to your `Cargo.toml`:
@@ -27,7 +29,7 @@ The build process automatically compiles the included `WFA2-lib`.
 
 ## Examples
 
-With affine gap penalties:
+### Basic Usage with Affine Gap Penalties
 
 ```rust
 use lib_wfa2::affine_wavefront::AffineWavefronts;
@@ -49,30 +51,58 @@ pub fn main() {
 }
 ```
 
-With dual-cost gap-affine penalties:
+### Ultra-low Memory Mode (bi-WFA)
+
+For aligning long sequences with minimal memory usage:
 
 ```rust
-use lib_wfa2::affine_wavefront::AffineWavefronts;
+use lib_wfa2::affine_wavefront::{AffineWavefronts, MemoryMode};
 
 pub fn main() {
-    // Create an aligner with affine2p penalties.
-    let aligner = AffineWavefronts::with_penalties_affine2p(0, 6, 4, 2, 12, 1);
+    // Quick constructor for ultralow memory with dual-cost gap-affine
+    let aligner = AffineWavefronts::new_ultralow();
 
-    // pattern means query and text means reference
+    // Or specify memory mode explicitly
+    let aligner = AffineWavefronts::with_penalties_affine2p_and_memory_mode(
+        0, 4, 6, 2, 12, 1, 
+        MemoryMode::Ultralow
+    );
+
     let pattern = b"TCTTTACTCGCGCGTTGGAGAAATACAATAGT";
     let text = b"TCTATACTGCGCGTTTGGAGAAATAAAATAGT";
 
     aligner.align(pattern, text);
 
-    println!("Pattern: {}", String::from_utf8_lossy(pattern));
-    println!("Text:    {}\n", String::from_utf8_lossy(text));
+    println!("Score: {}", aligner.score());
+    println!("Memory mode: {:?}", aligner.get_memory_mode());
+}
+```
+
+### Builder Pattern for Complex Configurations
+
+```rust
+use lib_wfa2::affine_wavefront::{AffineWavefrontsBuilder, MemoryMode, AlignmentScope, HeuristicStrategy};
+
+pub fn main() {
+    let aligner = AffineWavefrontsBuilder::new()
+        .penalties(0, 4, 6, 2)           // match, mismatch, gap_open, gap_ext
+        .dual_affine_penalties(12, 1)    // gap_open2, gap_ext2
+        .memory_mode(MemoryMode::Ultralow)
+        .alignment_scope(AlignmentScope::Alignment)
+        .heuristic(HeuristicStrategy::None)
+        .build();
+
+    let pattern = b"TCTTTACTCGCGCGTTGGAGAAATACAATAGT";
+    let text = b"TCTATACTGCGCGTTTGGAGAAATAAAATAGT";
+
+    let _status = aligner.align(pattern, text);
 
     println!("Score: {}", aligner.score());
     println!("Cigar: {}", String::from_utf8_lossy(aligner.cigar()));
 }
 ```
 
-Setting heuristics:
+### Setting Heuristics
 
 ```rust
 use lib_wfa2::affine_wavefront::{AffineWavefronts, HeuristicStrategy};

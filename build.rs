@@ -34,7 +34,7 @@ fn build_wfa() -> Result<(), Box<dyn std::error::Error>> {
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Make failed: {}", stderr).into());
+        return Err(format!("Make failed: {stderr}").into());
     }
 
     Ok(())
@@ -87,7 +87,7 @@ fn setup_linking() {
 
 fn main() {
     if let Err(e) = build_wfa() {
-        panic!("Failed to build WFA2-lib: {}", e);
+        panic!("Failed to build WFA2-lib: {e}");
     }
     setup_linking();
 }

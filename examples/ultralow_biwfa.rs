@@ -31,7 +31,7 @@ pub fn main() {
         MemoryMode::Ultralow,
     );
     
-    let status2 = aligner2.align(pattern, text);
+    let _status2 = aligner2.align(pattern, text);
     println!("Score with different penalties: {}", aligner2.score());
     println!();
 
@@ -45,7 +45,7 @@ pub fn main() {
         .heuristic(HeuristicStrategy::None)
         .build();
     
-    let status3 = aligner3.align(pattern, text);
+    let _status3 = aligner3.align(pattern, text);
     println!("Score with builder: {}", aligner3.score());
     println!("Memory mode verified: {:?}", aligner3.get_memory_mode());
 }

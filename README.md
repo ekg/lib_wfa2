@@ -1,5 +1,7 @@
 # lib_wfa2
 
+[![CI](https://github.com/your-username/lib_wfa2/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/lib_wfa2/actions/workflows/ci.yml)
+
 Rust binding for [WFA2-lib](https://github.com/smarco/WFA2-lib), with support for both affine gap and dual-cost gap-affine penalties.
 
 📚 **[Full documentation available in the docs/ directory](docs/)**

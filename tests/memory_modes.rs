@@ -1,5 +1,5 @@
 use lib_wfa2::affine_wavefront::{
-    AffineWavefronts, AffineWavefrontsBuilder, MemoryMode, AlignmentScope, 
+    AffineWavefronts, AffineWavefrontsBuilder, MemoryMode, 
     HeuristicStrategy, DistanceMetric, AlignmentStatus
 };
 

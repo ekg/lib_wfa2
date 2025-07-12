@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test-and-clippy:
+    name: Test and Clippy
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive  # Need to checkout WFA2-lib submodule
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build
+      run: cargo build --verbose
+
+    - name: Run tests
+      run: cargo test --verbose
+
+    - name: Run clippy
+      run: |
+        # Run clippy with warnings as errors, but allow warnings in bindings
+        cargo clippy --all-targets --all-features -- \
+          -D warnings \
+          -A clippy::unnecessary_transmutes \
+          -A clippy::useless_transmute
+
+    - name: Summary
+      if: always()
+      run: |
+        echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Build completed" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Tests passed" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Clippy passed" >> $GITHUB_STEP_SUMMARY

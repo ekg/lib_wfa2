@@ -175,10 +175,11 @@ fn test_memory_mode_persistence() {
     let status = aligner.align(&long_query, &long_ref);
     assert!(matches!(status, AlignmentStatus::Completed));
     
-    // With ultralow mode, score will be INT_MIN
+    // Upstream WFA2-lib v2.3.6 fixes BiWFA ultralow fallback scoring.
     let score = aligner.score();
     println!("Score with ultralow mode: {}", score);
-    assert_eq!(score, i32::MIN, "Ultralow mode should return INT_MIN score");
+    assert_ne!(score, i32::MIN, "Ultralow mode should return a valid score");
+    assert_eq!(score, 0, "Identical long sequences should score 0");
 }
 
 #[test]

@@ -1,6 +1,6 @@
 // extern crate bindgen;
 
-use std::{path::PathBuf, process::Command};
+use std::{env, path::PathBuf, process::Command};
 
 struct BuildPaths {
     wfa_src: PathBuf,
@@ -26,15 +26,41 @@ fn build_wfa() -> Result<(), Box<dyn std::error::Error>> {
         return Err("WFA2-lib/Makefile not found. Make sure the submodule is initialized.".into());
     }
 
-    // Build WFA2-lib in place
+    let target = env::var("TARGET").unwrap_or_default();
+    let portable = env::var("PORTABLE").unwrap_or_default() == "1";
+    let mut cc_flags = String::from("-Wall -g -fPIE -O3");
+    if !portable && target.contains("x86_64") && !target.contains("apple") {
+        cc_flags.push_str(" -march=native");
+    }
+
+    let (cc, cxx) = if target.contains("apple") {
+        ("clang", "clang++")
+    } else {
+        ("gcc", "g++")
+    };
+
+    // Build only the static library. WFA2-lib's tools/examples pull OpenMP into
+    // the build; the Rust bindings do not need them and Apple clang rejects the
+    // tools' bare -fopenmp flag.
     let output = Command::new("make")
-        .args(["clean", "all"])
+        .args([
+            "clean",
+            "setup",
+            "lib_wfa",
+            "BUILD_TOOLS=0",
+            "BUILD_EXAMPLES=0",
+            "BUILD_WFA_PARALLEL=0",
+            &format!("CC={cc}"),
+            &format!("CXX={cxx}"),
+            &format!("CC_FLAGS={cc_flags}"),
+        ])
         .current_dir(&paths.wfa_src)
         .output()?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Make failed: {stderr}").into());
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        return Err(format!("Make failed:\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}").into());
     }
 
     Ok(())
@@ -45,7 +71,6 @@ fn setup_linking() {
 
     // Link the WFA library
     println!("cargo:rustc-link-lib=static=wfa");
-    println!("cargo:rustc-link-lib=gomp");
 
     // Set library search path
     println!(

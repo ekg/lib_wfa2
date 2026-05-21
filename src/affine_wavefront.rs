@@ -11,6 +11,93 @@ pub enum DistanceMetric {
     GapAffine2p,
 }
 
+/// Backwards-compatible distance configuration used by older callers.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Distance {
+    Edit,
+    GapAffine {
+        mismatch: i32,
+        gap_opening: i32,
+        gap_extension: i32,
+    },
+    GapAffine2p {
+        mismatch: i32,
+        gap_opening1: i32,
+        gap_extension1: i32,
+        gap_opening2: i32,
+        gap_extension2: i32,
+    },
+}
+
+impl Distance {
+    pub fn create_aligner(
+        &self,
+        heuristic: Option<&HeuristicStrategy>,
+        memory_mode: Option<&MemoryMode>,
+    ) -> AffineWavefronts {
+        let mode = memory_mode.cloned().unwrap_or(MemoryMode::High);
+        let mut aligner = match *self {
+            Self::Edit => AffineWavefronts::with_edit_and_memory_mode(mode),
+            Self::GapAffine {
+                mismatch,
+                gap_opening,
+                gap_extension,
+            } => AffineWavefronts::with_penalties_and_memory_mode(
+                0,
+                mismatch,
+                gap_opening,
+                gap_extension,
+                mode,
+            ),
+            Self::GapAffine2p {
+                mismatch,
+                gap_opening1,
+                gap_extension1,
+                gap_opening2,
+                gap_extension2,
+            } => AffineWavefronts::with_penalties_affine2p_and_memory_mode(
+                0,
+                mismatch,
+                gap_opening1,
+                gap_extension1,
+                gap_opening2,
+                gap_extension2,
+                mode,
+            ),
+        };
+
+        aligner.set_heuristic(heuristic);
+        aligner
+    }
+
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            Self::Edit => 0,
+            Self::GapAffine { .. } => 1,
+            Self::GapAffine2p { .. } => 2,
+        }
+    }
+
+    pub fn from_u8(code: u8) -> Result<Self, String> {
+        match code {
+            0 => Ok(Self::Edit),
+            1 => Ok(Self::GapAffine {
+                mismatch: 0,
+                gap_opening: 0,
+                gap_extension: 0,
+            }),
+            2 => Ok(Self::GapAffine2p {
+                mismatch: 0,
+                gap_opening1: 0,
+                gap_extension1: 0,
+                gap_opening2: 0,
+                gap_extension2: 0,
+            }),
+            _ => Err(format!("Invalid distance code: {code}")),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum HeuristicStrategy {
     None,
@@ -105,6 +192,32 @@ impl MemoryMode {
             v if v == wfa::wavefront_memory_t_wavefront_memory_ultralow => Self::Ultralow,
             _ => Self::Undefined,
         }
+    }
+
+    pub fn to_wfa_value(&self) -> u32 {
+        match self {
+            Self::High => wfa::wavefront_memory_t_wavefront_memory_high,
+            Self::Medium => wfa::wavefront_memory_t_wavefront_memory_med,
+            Self::Low => wfa::wavefront_memory_t_wavefront_memory_low,
+            Self::Ultralow => wfa::wavefront_memory_t_wavefront_memory_ultralow,
+            Self::Undefined => wfa::wavefront_memory_t_wavefront_memory_high,
+        }
+    }
+}
+
+pub trait HeuristicArg<'a> {
+    fn into_heuristic(self) -> Option<&'a HeuristicStrategy>;
+}
+
+impl<'a> HeuristicArg<'a> for &'a HeuristicStrategy {
+    fn into_heuristic(self) -> Option<&'a HeuristicStrategy> {
+        Some(self)
+    }
+}
+
+impl<'a> HeuristicArg<'a> for Option<&'a HeuristicStrategy> {
+    fn into_heuristic(self) -> Option<&'a HeuristicStrategy> {
+        self
     }
 }
 
@@ -239,6 +352,20 @@ impl AffineWavefronts {
         }
     }
 
+    pub fn with_edit_and_memory_mode(memory_mode: MemoryMode) -> Self {
+        unsafe {
+            let mut attributes = wfa::wavefront_aligner_attr_default;
+
+            attributes.distance_metric = wfa::distance_metric_t_edit;
+            attributes.memory_mode = memory_mode.to_wfa_value();
+            attributes.heuristic.strategy = wfa::wf_heuristic_strategy_wf_heuristic_none;
+
+            let wf_aligner = wfa::wavefront_aligner_new(&mut attributes);
+
+            Self { wf_aligner }
+        }
+    }
+
     pub fn set_penalties_affine2p(
         &mut self,
         match_: i32,
@@ -333,61 +460,86 @@ impl AffineWavefronts {
         }
     }
 
-    pub fn set_heuristic(&mut self, heuristic: &HeuristicStrategy) {
-        match *heuristic {
-            HeuristicStrategy::None => unsafe {
+    pub fn get_distance(&self) -> Distance {
+        unsafe {
+            let penalties = (*self.wf_aligner).penalties;
+            match penalties.distance_metric {
+                m if m == wfa::distance_metric_t_edit => Distance::Edit,
+                m if m == wfa::distance_metric_t_gap_affine => Distance::GapAffine {
+                    mismatch: penalties.mismatch,
+                    gap_opening: penalties.gap_opening1,
+                    gap_extension: penalties.gap_extension1,
+                },
+                m if m == wfa::distance_metric_t_gap_affine_2p => Distance::GapAffine2p {
+                    mismatch: penalties.mismatch,
+                    gap_opening1: penalties.gap_opening1,
+                    gap_extension1: penalties.gap_extension1,
+                    gap_opening2: penalties.gap_opening2,
+                    gap_extension2: penalties.gap_extension2,
+                },
+                _ => Distance::Edit,
+            }
+        }
+    }
+
+    pub fn set_heuristic<'a, H>(&mut self, heuristic: H)
+    where
+        H: HeuristicArg<'a>,
+    {
+        match heuristic.into_heuristic() {
+            None | Some(HeuristicStrategy::None) => unsafe {
                 wfa::wavefront_aligner_set_heuristic_none(self.wf_aligner)
             },
-            HeuristicStrategy::BandedStatic {
+            Some(HeuristicStrategy::BandedStatic {
                 band_min_k,
                 band_max_k,
-            } => unsafe {
+            }) => unsafe {
                 wfa::wavefront_aligner_set_heuristic_banded_static(
                     self.wf_aligner,
-                    band_min_k,
-                    band_max_k,
+                    *band_min_k,
+                    *band_max_k,
                 )
             },
-            HeuristicStrategy::BandedAdaptive {
+            Some(HeuristicStrategy::BandedAdaptive {
                 band_min_k,
                 band_max_k,
                 score_steps,
-            } => unsafe {
+            }) => unsafe {
                 wfa::wavefront_aligner_set_heuristic_banded_adaptive(
                     self.wf_aligner,
-                    band_min_k,
-                    band_max_k,
-                    score_steps,
+                    *band_min_k,
+                    *band_max_k,
+                    *score_steps,
                 )
             },
-            HeuristicStrategy::WFAdaptive {
+            Some(HeuristicStrategy::WFAdaptive {
                 min_wavefront_length,
                 max_distance_threshold,
                 score_steps,
-            } => unsafe {
+            }) => unsafe {
                 wfa::wavefront_aligner_set_heuristic_wfadaptive(
                     self.wf_aligner,
-                    min_wavefront_length,
-                    max_distance_threshold,
-                    score_steps,
+                    *min_wavefront_length,
+                    *max_distance_threshold,
+                    *score_steps,
                 )
             },
-            HeuristicStrategy::XDrop { xdrop, score_steps } => unsafe {
-                wfa::wavefront_aligner_set_heuristic_xdrop(self.wf_aligner, xdrop, score_steps)
+            Some(HeuristicStrategy::XDrop { xdrop, score_steps }) => unsafe {
+                wfa::wavefront_aligner_set_heuristic_xdrop(self.wf_aligner, *xdrop, *score_steps)
             },
-            HeuristicStrategy::ZDrop { zdrop, score_steps } => unsafe {
-                wfa::wavefront_aligner_set_heuristic_zdrop(self.wf_aligner, zdrop, score_steps)
+            Some(HeuristicStrategy::ZDrop { zdrop, score_steps }) => unsafe {
+                wfa::wavefront_aligner_set_heuristic_zdrop(self.wf_aligner, *zdrop, *score_steps)
             },
-            HeuristicStrategy::WFMash {
+            Some(HeuristicStrategy::WFMash {
                 min_wavefront_length,
                 max_distance_threshold,
                 score_steps,
-            } => unsafe {
+            }) => unsafe {
                 wfa::wavefront_aligner_set_heuristic_wfmash(
                     self.wf_aligner,
-                    min_wavefront_length,
-                    max_distance_threshold,
-                    score_steps,
+                    *min_wavefront_length,
+                    *max_distance_threshold,
+                    *score_steps,
                 )
             },
         }
